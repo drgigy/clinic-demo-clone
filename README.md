@@ -64,6 +64,20 @@ The app uses these Firestore collections:
 
 The ambient notes feature asks for a Gemini API key inside the app settings. Do not commit a real Gemini API key to GitHub. Add it in the app UI only when testing locally or after deployment.
 
+## Demo Data
+
+The hosted demo has fictional seed data for May, June, and July 2026:
+
+- 78 appointment records
+- 23 demo medical notes
+- 24 finance ledger entries
+
+The names, phone numbers, UHIDs, notes, and financial entries are fictional demo data only. To re-upload the same deterministic demo dataset from a Firebase-authenticated local machine:
+
+```bash
+node scripts/seed-demo-data.mjs
+```
+
 ## GitHub Setup
 
 GitHub repository created:
