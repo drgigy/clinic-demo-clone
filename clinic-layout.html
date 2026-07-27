@@ -397,6 +397,9 @@
         <div class="main-tabs" aria-label="Clinic workspace">
           <button class="secondary main-tab active" type="button" data-main-tab="doctor">Doctor</button>
           <button class="secondary main-tab" type="button" data-main-tab="staff">Staff</button>
+          <button class="secondary main-tab" type="button" data-main-tab="finance">Finance</button>
+          <button class="secondary main-tab" type="button" data-main-tab="followup">Follow-up</button>
+          <button class="secondary main-tab whatsapp-tab" type="button" data-main-tab="whatsapp" title="WhatsApp preview" aria-label="WhatsApp preview">☏</button>
         </div>
         <div class="nav-date-control">
           <button class="primary" id="openAddPatientBtn" type="button">Add Patient</button>
@@ -411,6 +414,9 @@
               <button class="secondary active" data-scroll="today" type="button">Today</button>
               <button class="secondary" type="button" id="openAddPatientNavBtn">Add Patient</button>
               <button class="secondary" data-scroll="after" type="button">After Consultation</button>
+              <button class="secondary" data-scroll="followup" type="button">Follow-up List</button>
+              <button class="secondary" data-scroll="report" type="button">Monthly Report</button>
+              <button class="secondary" type="button" data-main-tab="whatsapp">WhatsApp Preview</button>
               <button class="secondary" type="button" id="openNeuroBtn">Neurodiagnostics</button>
               <button class="secondary" type="button" id="openSettingsBtn">Settings</button>
               <button class="secondary sign-out" id="logoutBtn" type="button">Sign out</button>
@@ -701,21 +707,13 @@
               </div>
               <div class="settings-comment-list" id="settingsCommentsList"></div>
             </label>
-            <label class="settings-block">
-              Tests
-              <div class="settings-grid">
-                <input id="newTestName" autocomplete="off" placeholder="Example: Neuro test, EEG, MRI, blood test" />
-                <button class="primary" type="button" id="addTestNameBtn">+</button>
-              </div>
-              <div class="settings-comment-list" id="settingsTestsList"></div>
-            </label>
             <div class="record-status" id="settingsStatus"></div>
             </div>
           </section>
         </div>
       </main>
 
-      <aside class="preview-area" hidden>
+      <aside class="preview-area">
         <div class="preview-panel">
           <div class="preview-head section-head"><div><h3>WhatsApp Preview</h3><p>These messages use the selected clinic date.</p></div><button class="secondary" type="button" id="toggleWhatsapp">Show preview</button></div>
           <div class="preview-body">
@@ -894,7 +892,7 @@
         signOut
       } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
 
-      let tests = ["Neuro test", "EEG", "MRI", "Blood test"];
+      const tests = ["Nerve test", "EEG", "BAER", "VEP", "MRI", "CT scan"];
       const storeKey = "clinicDemoDailyPatients.v1";
       const phoneKey = "clinicDemoDoctorPhone.v1";
       const selectedDateKey = "clinicDemoSelectedDate.v1";
@@ -902,7 +900,6 @@
       const ambientAuthorizationStore = "clinicDemoAmbientAuthorization.v1";
       const doctorCredentialsStore = "clinicDemoDoctorCredentials.v1";
       const patientCommentsStore = "clinicDemoPatientComments.v1";
-      const testNamesStore = "clinicDemoTestNames.v1";
       const clinicNameStore = "clinicDemoNameHtml.v1";
       const clinicNameStyleStore = "clinicDemoNameStyle.v1";
       const ambientModes = {
@@ -944,7 +941,6 @@
       let clinicSettings = {
         doctorCredentials: readStore(doctorCredentialsStore, ""),
         patientComments: parseStoredArray(patientCommentsStore),
-        tests: parseStoredArray(testNamesStore),
         clinicName: readStore(clinicNameStore, ""),
         clinicNameStyle: parseStoredObject(clinicNameStyleStore, { size: "medium", color: "#17222b" })
       };
@@ -1179,15 +1175,12 @@
           clinicSettings = {
             doctorCredentials: readStore(doctorCredentialsStore, ""),
             patientComments: parseStoredArray(patientCommentsStore),
-            tests: parseStoredArray(testNamesStore),
             clinicName: readStore(clinicNameStore, ""),
             clinicNameStyle: parseStoredObject(clinicNameStyleStore, { size: "medium", color: "#17222b" }),
             ...(snapshot.exists() ? snapshot.data() : {})
           };
           writeStore(doctorCredentialsStore, clinicSettings.doctorCredentials || "");
           writeStore(patientCommentsStore, JSON.stringify(patientComments()));
-          writeStore(testNamesStore, JSON.stringify(clinicTests()));
-          tests = clinicTests();
           writeStore(clinicNameStore, clinicSettings.clinicName || "");
           writeStore(clinicNameStyleStore, JSON.stringify(clinicNameStyle()));
           const credentialsEditor = $("#doctorCredentials");
@@ -1201,7 +1194,6 @@
           if (!$("#settingsModal").classList.contains("open")) setClinicNameStyleControls();
           renderCommentSelects();
           renderSettingsComments();
-          renderSettingsTests();
           renderClinicName();
         }, (error) => {
           console.error("Firebase settings sync failed", error);
@@ -1217,18 +1209,6 @@
         return Array.isArray(clinicSettings.patientComments)
           ? clinicSettings.patientComments.map((item) => String(item || "").trim()).filter(Boolean)
           : [];
-      }
-      function clinicTests() {
-        const configured = Array.isArray(clinicSettings.tests)
-          ? clinicSettings.tests.map((item) => String(item || "").trim()).filter(Boolean)
-          : [];
-        return configured.length ? [...new Set(configured)] : ["Neuro test", "EEG", "MRI", "Blood test"];
-      }
-      function normaliseTests(testNames = []) {
-        return [...new Set((Array.isArray(testNames) ? testNames : [])
-          .flatMap((item) => String(item || "").split(","))
-          .map((item) => item.trim())
-          .filter(Boolean))];
       }
       function normaliseComments(comments = []) {
         return [...new Set((Array.isArray(comments) ? comments : [])
@@ -1280,28 +1260,15 @@
           <span class="settings-comment-pill">${escapeHtml(comment)} <button type="button" data-remove-patient-comment="${escapeHtml(comment)}" aria-label="Remove ${escapeHtml(comment)}">&times;</button></span>
         `).join("") : `<span class="meta">No comments added.</span>`;
       }
-      function renderSettingsTests() {
-        const box = $("#settingsTestsList");
-        if (!box) return;
-        const items = clinicTests();
-        box.innerHTML = items.length ? items.map((test) => `
-          <span class="settings-comment-pill">${escapeHtml(test)} <button type="button" data-remove-test-name="${escapeHtml(test)}" aria-label="Remove ${escapeHtml(test)}">&times;</button></span>
-        `).join("") : `<span class="meta">No tests added.</span>`;
-      }
       async function saveClinicSettingsPatch(patch) {
         clinicSettings = { ...clinicSettings, ...patch };
         if (patch.doctorCredentials !== undefined) writeStore(doctorCredentialsStore, patch.doctorCredentials || "");
         if (patch.patientComments !== undefined) writeStore(patientCommentsStore, JSON.stringify(patientComments()));
-        if (patch.tests !== undefined) {
-          writeStore(testNamesStore, JSON.stringify(clinicTests()));
-          tests = clinicTests();
-        }
         if (patch.clinicName !== undefined) writeStore(clinicNameStore, patch.clinicName || "");
         if (patch.clinicNameStyle !== undefined) writeStore(clinicNameStyleStore, JSON.stringify(clinicNameStyle()));
         await setDoc(settingsDocRef, { ...patch, updatedAt: new Date().toISOString() }, { merge: true });
         renderCommentSelects();
         renderSettingsComments();
-        renderSettingsTests();
         renderClinicName();
       }
       function patientCommentsHtml(patient) {
@@ -2296,22 +2263,23 @@ ${context}`;
         $("#homeMenuBtn")?.setAttribute("aria-expanded", String(open));
       }
       function setMainTab(tab = "doctor", refresh = true) {
-        if (!["doctor", "staff"].includes(tab)) tab = "doctor";
         activeMainTab = tab;
         $$("[data-main-tab]").forEach((button) => button.classList.toggle("active", button.dataset.mainTab === tab));
+        const showClinical = tab === "doctor" || tab === "staff";
         const visibility = {
-          statsPanel: true,
-          after: true,
-          report: false,
-          accounts: false,
-          followup: false
+          statsPanel: showClinical,
+          after: showClinical,
+          report: tab === "finance",
+          accounts: tab === "finance",
+          followup: tab === "followup"
         };
         Object.entries(visibility).forEach(([id, show]) => {
           const element = document.getElementById(id);
           if (element) element.hidden = !show;
         });
         const preview = document.querySelector(".preview-area");
-        if (preview) preview.hidden = true;
+        if (tab === "whatsapp") whatsappExpanded = true;
+        if (preview) preview.hidden = tab !== "whatsapp";
         $("#statsPanel")?.classList.toggle("doctor-stats", tab === "doctor");
         $("#after")?.classList.toggle("doctor-after-section", tab === "doctor");
         $("#afterSectionHead")?.toggleAttribute("hidden", tab === "doctor");
@@ -2326,6 +2294,8 @@ ${context}`;
         }
       }
       function tabForAnchor(anchor) {
+        if (anchor === "report" || anchor === "accounts") return "finance";
+        if (anchor === "followup") return "followup";
         return "doctor";
       }
       function clearChoiceGroup(groupName) {
@@ -2363,7 +2333,6 @@ ${context}`;
         setClinicNameStyleControls();
         $("#doctorCredentials").innerHTML = doctorCredentialsHtml();
         renderSettingsComments();
-        renderSettingsTests();
         $("#settingsModal").classList.add("open");
         $("#settingsModal").setAttribute("aria-hidden", "false");
         $("#ambientAuthorizationKey").focus();
@@ -2547,7 +2516,9 @@ ${context}`;
         return Boolean(
           (patient.tests || []).length ||
           Number(patient.consultAmount || 0) ||
-          patient.consultPayMode
+          Number(patient.testAmount || 0) ||
+          patient.consultPayMode ||
+          patient.testPayMode
         );
       }
       function totals(rows = selectedDayPatients()) {
@@ -2663,6 +2634,7 @@ ${context}`;
               </div>
               <div class="payment-group">
                 <div class="payment-row"><span class="payment-label">Consultation</span><input class="amount-input" data-amount="${p.id}:consultAmount" value="${p.consultAmount || ""}" placeholder="0" inputmode="numeric" maxlength="4" pattern="[0-9]{0,4}" /><button class="choice ${p.consultPayMode === "Cash" ? "cash" : ""}" data-pay="${p.id}:consultPayMode:Cash" type="button">Cash</button><button class="choice ${p.consultPayMode === "GPay" ? "gpay" : ""}" data-pay="${p.id}:consultPayMode:GPay" type="button">GPay</button><button class="choice ${p.consultPayMode === "Card" ? "gpay" : ""}" data-pay="${p.id}:consultPayMode:Card" type="button">Card</button></div>
+                <div class="payment-row"><span class="payment-label">Tests</span><input class="amount-input" data-amount="${p.id}:testAmount" value="${p.testAmount || ""}" placeholder="0" inputmode="numeric" maxlength="4" pattern="[0-9]{0,4}" /><button class="choice ${p.testPayMode === "Cash" ? "cash" : ""}" data-pay="${p.id}:testPayMode:Cash" type="button">Cash</button><button class="choice ${p.testPayMode === "GPay" ? "gpay" : ""}" data-pay="${p.id}:testPayMode:GPay" type="button">GPay</button><button class="choice ${p.testPayMode === "Card" ? "gpay" : ""}" data-pay="${p.id}:testPayMode:Card" type="button">Card</button></div>
               </div>
             </div>
           </article>
@@ -3652,22 +3624,6 @@ ${context}`;
           await saveClinicSettingsPatch({ patientComments: comments });
           $("#settingsStatus").textContent = "Comment removed.";
         }
-        if (button.id === "addTestNameBtn") {
-          const addedTests = normaliseTests([$("#newTestName").value]);
-          if (!addedTests.length) { alert("Enter a test."); return; }
-          const items = normaliseTests([...clinicTests(), ...addedTests]).sort((a, b) => a.localeCompare(b));
-          $("#newTestName").value = "";
-          await saveClinicSettingsPatch({ tests: items });
-          render();
-          $("#settingsStatus").textContent = "Test saved.";
-        }
-        if (button.dataset.removeTestName) {
-          const test = button.dataset.removeTestName;
-          const items = clinicTests().filter((item) => item !== test);
-          await saveClinicSettingsPatch({ tests: items });
-          render();
-          $("#settingsStatus").textContent = "Test removed.";
-        }
         if (button.dataset.copy) copyReport(button.dataset.copy);
         if (button.id === "toggleFollowup") { followupExpanded = !followupExpanded; renderFollowupList(); }
         if (button.id === "toggleWhatsapp") { whatsappExpanded = !whatsappExpanded; renderWhatsappPreview(); }
@@ -3789,10 +3745,8 @@ ${context}`;
       $("#clinicName").innerHTML = clinicNameHtml();
       setClinicNameStyleControls();
       $("#doctorCredentials").innerHTML = doctorCredentialsHtml();
-      tests = clinicTests();
       renderCommentSelects();
       renderSettingsComments();
-      renderSettingsTests();
       renderClinicName();
       setMainTab("doctor");
       render();
