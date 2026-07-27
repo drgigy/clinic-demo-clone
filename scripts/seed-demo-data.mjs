@@ -5,7 +5,7 @@ const PROJECT_ID = "clinic-demo-clone-drgigy";
 const DATABASE = "(default)";
 const FIRESTORE_ROOT = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/${encodeURIComponent(DATABASE)}/documents`;
 
-const tests = ["Nerve test", "EEG", "BAER", "VEP", "MRI", "CT scan"];
+const tests = ["Neuro test", "EEG", "MRI", "Blood test"];
 const diagnoses = ["Epilepsy", "Headache", "Pain", "Stroke", "Parkinsons", "Others"];
 const names = [
   ["Aarav Menon", "42", "Male"], ["Meera Nair", "36", "Female"], ["George Mathew", "68", "Male"],
@@ -43,7 +43,7 @@ function moneyForVisit(visitType, mode) {
 }
 
 function testAmount(selectedTests) {
-  const rates = { "Nerve test": 1800, EEG: 1200, BAER: 900, VEP: 900, MRI: 0, "CT scan": 0 };
+  const rates = { "Neuro test": 1800, EEG: 1200, MRI: 0, "Blood test": 600 };
   return selectedTests.reduce((sum, test) => sum + (rates[test] || 0), 0);
 }
 
@@ -109,7 +109,7 @@ function makePatients() {
         diagnosis,
         attendance,
         callbackStatus: attendance === "No show" ? (i % 22 === 0 ? "No response" : "Appointment given") : "",
-        tests: selectedTests.filter((test) => testAmount([test]) > 0 || ["MRI", "CT scan"].includes(test)),
+        tests: selectedTests.filter((test) => testAmount([test]) > 0 || test === "MRI"),
         consultAmount,
         consultPayMode: attendance === "Came" ? payMode(i + monthIndex) : "",
         testAmount: testTotal ? String(testTotal) : "",
@@ -208,7 +208,13 @@ async function main() {
   const patients = makePatients();
   const medicalRecords = makeMedicalRecords(patients);
   const accounts = makeAccounts();
+  const settings = {
+    id: "clinic",
+    tests,
+    updatedAt: new Date().toISOString()
+  };
   const writes = [
+    ["settings", settings],
     ...patients.map((document) => ["patients", document]),
     ...medicalRecords.map((document) => ["medicalRecords", document]),
     ...accounts.map((document) => ["accounts", document])
