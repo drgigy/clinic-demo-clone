@@ -23,11 +23,16 @@ No Firebase data export, patient list, medical record, account ledger, saved set
 
 ## Firebase Setup
 
-1. Create a new Firebase project at <https://console.firebase.google.com/>.
-2. In the new project, create a Web app.
-3. Copy the Firebase web config from Project settings.
-4. Open `index.html` and `clinic-layout.html`.
-5. Replace this placeholder block in both files:
+Firebase project created for this demo:
+
+- Project ID: `clinic-demo-clone-drgigy`
+- Console: <https://console.firebase.google.com/project/clinic-demo-clone-drgigy/overview>
+- Firestore database: created in `asia-south1`
+- Firestore rules: deployed from `firestore.rules`
+
+The Firebase web app config has already been added to `index.html` and `clinic-layout.html`.
+
+If you create another Firebase project later, open `index.html` and `clinic-layout.html`, then replace this block in both files:
 
 ```js
 const firebaseConfig = {
@@ -40,10 +45,12 @@ const firebaseConfig = {
 };
 ```
 
-6. Enable Firebase Authentication.
-7. Add the new doctor's sign-in user under Authentication > Users.
-8. Enable Cloud Firestore.
-9. Publish the included `firestore.rules` in Firestore > Rules.
+For this project, these setup steps still matter:
+
+1. Enable Firebase Authentication.
+2. Add the new doctor's sign-in user under Authentication > Users.
+3. Confirm Firestore is empty before sharing the app.
+4. Re-publish `firestore.rules` if you edit the rules later.
 
 The app uses these Firestore collections:
 
@@ -59,8 +66,11 @@ The ambient notes feature asks for a Gemini API key inside the app settings. Do 
 
 ## GitHub Setup
 
-1. Create a new empty GitHub repository.
-2. From this folder, initialize and push:
+GitHub repository created:
+
+- <https://github.com/drgigy/clinic-demo-clone>
+
+If you need to push this folder again:
 
 ```bash
 git init
