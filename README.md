@@ -69,6 +69,8 @@ The ambient notes feature asks for a Gemini API key inside the app settings. Do 
 GitHub repository created:
 
 - <https://github.com/drgigy/clinic-demo-clone>
+- Live custom domain: <https://democlinic.woyz.in/>
+- GitHub Pages fallback URL: <https://drgigy.github.io/clinic-demo-clone/>
 
 If you need to push this folder again:
 
