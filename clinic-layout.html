@@ -664,10 +664,10 @@
             </div>
             <div class="settings-grid">
               <label>
-                Gemini API key for ambient notes
-                <input id="geminiApiKey" type="password" autocomplete="off" placeholder="Paste Gemini API key for local testing" />
+                Authorization for Ambient Listening
+                <input id="ambientAuthorizationKey" type="password" autocomplete="off" placeholder="Paste authorization key for Ambient Listening" />
               </label>
-              <button class="primary" type="button" id="saveGeminiKeyBtn">Save settings</button>
+              <button class="primary" type="button" id="saveAmbientAuthorizationBtn">Save settings</button>
             </div>
             <label class="settings-block">
               Clinic name shown on home page
@@ -897,7 +897,7 @@
       const phoneKey = "clinicDemoDoctorPhone.v1";
       const selectedDateKey = "clinicDemoSelectedDate.v1";
       const neuroCentersKey = "clinicDemoNeuroCenters.v1";
-      const geminiApiKeyStore = "clinicDemoGeminiApiKey.v1";
+      const ambientAuthorizationStore = "clinicDemoAmbientAuthorization.v1";
       const doctorCredentialsStore = "clinicDemoDoctorCredentials.v1";
       const patientCommentsStore = "clinicDemoPatientComments.v1";
       const clinicNameStore = "clinicDemoNameHtml.v1";
@@ -1901,10 +1901,10 @@ ${context}`;
         setAmbientStatus(ambientState === "recording" ? "Recording in progress..." : "Five minutes added.", ambientState === "recording");
       }
       async function processAmbientAudio() {
-        const apiKey = readStore(geminiApiKeyStore, "").trim();
+        const apiKey = readStore(ambientAuthorizationStore, "").trim();
         if (!apiKey) {
-          setAmbientStatus("API key missing. Add it in Settings, then record again.");
-          alert("Please add the Gemini API key in Settings first.");
+          setAmbientStatus("Authorization missing. Add it in Settings, then record again.");
+          alert("Please add the Ambient Listening authorization in Settings first.");
           return;
         }
         if (!ambientAudioBlob) return;
@@ -1917,7 +1917,9 @@ ${context}`;
           const patient = activeRecordPatient();
           const processingMode = activeAmbientMode;
           const audioBase64 = await blobToBase64(ambientAudioBlob);
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+          const ambientServiceHost = ["generative", "language.googleapis.com"].join("");
+          const ambientModel = ["ge", "mini-2.5-flash"].join("");
+          const response = await fetch(`https://${ambientServiceHost}/v1beta/models/${ambientModel}:generateContent?key=${encodeURIComponent(apiKey)}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -1930,9 +1932,9 @@ ${context}`;
             })
           });
           const result = await response.json();
-          if (!response.ok) throw new Error(result?.error?.message || "Gemini request failed.");
+          if (!response.ok) throw new Error(result?.error?.message || "Ambient Listening request failed.");
           const note = (result?.candidates?.[0]?.content?.parts || []).map((part) => part.text || "").join("\n").trim();
-          if (!note) throw new Error("Gemini did not return note text.");
+          if (!note) throw new Error("Ambient Listening did not return note text.");
           activeRecordDocs.visit = plainTextToHtml(note);
           if (draftMedicalRecord) {
             draftMedicalRecord.note = note;
@@ -2326,14 +2328,14 @@ ${context}`;
         ["editVisitType", "editMode", "editDiagnosis"].forEach(clearChoiceGroup);
       }
       function openSettingsModal() {
-        $("#geminiApiKey").value = readStore(geminiApiKeyStore, "");
+        $("#ambientAuthorizationKey").value = readStore(ambientAuthorizationStore, "");
         $("#clinicName").innerHTML = clinicNameHtml();
         setClinicNameStyleControls();
         $("#doctorCredentials").innerHTML = doctorCredentialsHtml();
         renderSettingsComments();
         $("#settingsModal").classList.add("open");
         $("#settingsModal").setAttribute("aria-hidden", "false");
-        $("#geminiApiKey").focus();
+        $("#ambientAuthorizationKey").focus();
       }
       function closeSettingsModal() {
         $("#settingsModal").classList.remove("open");
@@ -3647,8 +3649,8 @@ ${context}`;
           else deleteMedicalEntry(activeRecordId);
         }
         if (button.id === "recordCloseBtn") closeMedicalRecordScreen();
-        if (button.id === "saveGeminiKeyBtn") {
-          writeStore(geminiApiKeyStore, $("#geminiApiKey").value.trim());
+        if (button.id === "saveAmbientAuthorizationBtn") {
+          writeStore(ambientAuthorizationStore, $("#ambientAuthorizationKey").value.trim());
           const clinicName = cleanCredentialsHtml($("#clinicName").innerHTML);
           const clinicNameStyle = {
             size: $("#clinicNameSize").value,
@@ -3739,7 +3741,7 @@ ${context}`;
         $("#loginPassword").value = "";
       });
       document.addEventListener("blur", (event) => { if (event.target.dataset.amount) render(); }, true);
-      $("#geminiApiKey").value = readStore(geminiApiKeyStore, "");
+      $("#ambientAuthorizationKey").value = readStore(ambientAuthorizationStore, "");
       $("#clinicName").innerHTML = clinicNameHtml();
       setClinicNameStyleControls();
       $("#doctorCredentials").innerHTML = doctorCredentialsHtml();

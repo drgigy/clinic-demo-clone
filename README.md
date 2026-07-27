@@ -60,9 +60,9 @@ The app uses these Firestore collections:
 - `neuroMonthlyStats`
 - `settings/clinic`
 
-## Optional Gemini Setup
+## Optional Ambient Listening Setup
 
-The ambient notes feature asks for a Gemini API key inside the app settings. Do not commit a real Gemini API key to GitHub. Add it in the app UI only when testing locally or after deployment.
+The ambient notes feature asks for an Ambient Listening authorization key inside the app settings. Do not commit a real authorization key to GitHub. Add it in the app UI only when testing locally or after deployment.
 
 ## Demo Data
 
